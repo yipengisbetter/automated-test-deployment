@@ -1,11 +1,15 @@
 name: Test and Deploy to Vercel
 
-# 触发条件：推送到 main 分支 / 合并 PR
+# 触发条件：推送到 main 或 preview 分支 / 合并 PR
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - preview
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - preview
 
 jobs:
   # 第一步：运行自动化测试
@@ -35,15 +39,28 @@ jobs:
   deploy:
     needs: test  # 👈 必须等 test 成功才执行
     runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install Vercel CLI
         run: npm install -g vercel
 
-      - name: Deploy to Vercel
+      # 判断分支逻辑
+      - name: Deploy Production (main)
+        if: github.ref == 'refs/heads/main'
         run: |
-          vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel pull --yes --environment=production
+          vercel build --prod
+          vercel deploy --prebuilt --prod
+
+      - name: Deploy Preview (preview分支)
+        if: github.ref == 'refs/heads/preview'
+        run: |
+          vercel pull --yes --environment=preview
+          vercel build
+          vercel deploy --prebuilt
