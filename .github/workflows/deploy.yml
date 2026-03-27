@@ -40,27 +40,27 @@ jobs:
     needs: test  # 👈 必须等 test 成功才执行
     runs-on: ubuntu-latest
     env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install Vercel CLI
         run: npm install -g vercel
 
-      # 判断分支逻辑
-      - name: Deploy Production (main)
+      # 部署生产环境 (main)
+      - name: Deploy to Production
         if: github.ref == 'refs/heads/main'
         run: |
-          vercel pull --yes --environment=production
-          vercel build --prod
-          vercel deploy --prebuilt --prod
+          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Deploy Preview (preview分支)
+      # 部署预览环境 (preview)
+      - name: Deploy to Preview
         if: github.ref == 'refs/heads/preview'
         run: |
-          vercel pull --yes --environment=preview
-          vercel build
-          vercel deploy --prebuilt
+          vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --token=${{ secrets.VERCEL_TOKEN }}
+          vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
